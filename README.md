@@ -50,17 +50,31 @@ pip install -r requirements.txt
 
 ### ⚙️ Environment Configuration
 
-Before running the application, create a `.env` file at the root of the project with the next structure:
-**DATABASE_URL=postgresql://<your_user>:<your_password>@localhost:5432/<your_database>**
-
+Before running the application, create a `.env` file at the root of the project.
 You can use the provided `.env.example` as a starting point:
 
 ```bash
 cp .env.example .env
 ```
-
-⚠️ Make sure the PostgreSQL server is running and the database exists.
 ☠️ Do not commit the .env file. It is ignored by .gitignore.
+⚠️ Make sure the PostgreSQL server is running and create <your_database>. Then write your credentials into your .env file:
+
+```env
+DATABASE_URL=postgresql://<your_user>:<your_password>@localhost:5432/<your_database>
+```
+
+🔐 JWT Secret Key Setup. For security reasons, you must provide a strong secret key for JWT signing. This key is used to encode and verify authentication tokens, and should never be hardcoded or weak.
+You can generate a secur key using Python:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+Once generated, copy the output into your .env file:
+
+```env
+JWT_SECRET_KEY=your_generated_secure_key_here
+```
 
 ### 🛠️ Apply database migrations
 

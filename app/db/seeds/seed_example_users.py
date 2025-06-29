@@ -2,10 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.user_role import UserRole
 from app.models.language import Language
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+from app.utils.security import get_password_hash
 
 def seed_example_users(session: Session) -> None:
     examples = [
@@ -26,7 +23,8 @@ def seed_example_users(session: Session) -> None:
         if not lang:
             raise ValueError(f"Language '{user_data['language']}' not found. Run seed_languages first.")
 
-        hashed = pwd_context.hash(user_data["password"])
+        hashed = get_password_hash(user_data["password"])
+
         user = User(
             name=user_data["name"],
             email=user_data["email"],
@@ -35,5 +33,6 @@ def seed_example_users(session: Session) -> None:
             language_id=lang.id,
             is_active=True
         )
+
         session.add(user)
 

@@ -4,6 +4,9 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.models.user_role import UserRole
+from app.models.language import Language
+
 
 class User(Base):
     __tablename__ = "users"
