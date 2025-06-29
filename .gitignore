@@ -1,0 +1,9 @@
+/* Virtual environments */
+venv/
+
+/* Python bytecode and cache */
+__pycache__/
+*.py[cod]
+
+/* Environment files */
+.env

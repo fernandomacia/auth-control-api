@@ -1,0 +1,21 @@
+/* FastAPI core */
+fastapi==0.115.14
+uvicorn==0.35.0 # ASGI server for FastAPI
+
+/* Security and authentication */
+python-jose==3.5.0  # JWT handling
+passlib==1.7.4            # Password hashing
+bcrypt==4.3.0             # Password hashing
+
+/* Environment configuration */
+python-dotenv==1.1.1              # Load .env variables
+
+/* Email validation */
+email-validator==2.2.0            # Validate user email addresses
+
+/* Database: PostgreSQL + ORM */
+SQLAlchemy==2.0.41                # SQL ORM (installed)
+psycopg2-binary==2.9.10           # PostgreSQL driver (installed)
+alembic==1.16.2                   # Database migrations (installed)
+Mako==1.3.10                      # Template engine required by Alembic
+greenlet==3.2.3                   # Required by SQLAlchemy async support
