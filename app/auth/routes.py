@@ -18,6 +18,9 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     if not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
     access_token = create_access_token(data={"sub": str(user.id)})
 

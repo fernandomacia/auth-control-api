@@ -1,3 +1,6 @@
+/* Visual Studio Code */
+.vscode/
+
 /* Virtual environments */
 venv/
 
@@ -8,4 +11,5 @@ __pycache__/
 /* Environment files */
 .env
 
-LEEME.md
+/* Test databases */
+tests/databases/

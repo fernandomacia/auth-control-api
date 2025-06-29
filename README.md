@@ -10,6 +10,7 @@
 - 👥 Role-based user access (`user`, `admin`, `superadmin`)
 - 🌐 User language preferences
 - 📦 FastAPI + Pydantic architecture
+- 🧪 Testing
 - ⚙️ Ready to scale with new modules
 
 ---
@@ -23,7 +24,8 @@
 - SQLAlchemy + Alembic
 - PostgreSQL
 - JWT via `python-jose`
-- `Passlib` for password hashing
+- bcrypt for password hashing 
+- Pytest
 
 ---
 
@@ -96,7 +98,7 @@ uvicorn app.main:app --reload
 
 ---
 
-## 🧪 Example Users for Testing
+## Example Users
 
 The following example users are automatically created by the seed script:
 
@@ -107,3 +109,29 @@ The following example users are automatically created by the seed script:
 | User        | user@example.net         | user         | user        | fr       |
 
 ⚠️ These accounts are for development and testing purposes only. Do **not** use them in production environments.
+
+## 🧪 Testing
+
+This project includes automated tests using Pytest and FastAPI's TestClient.
+
+To run the test suite:
+
+```bash
+pytest
+```
+
+📂 Tests are located in the /tests/ directory and use a separate SQLite database stored in:
+
+```text
+./tests/databases/test.db
+```
+
+**Included tests:**
+
+✅ /login endpoint success and error cases
+
+🧪 Custom fixtures with isolated user, role, and language seeding
+
+
+✅ Tests are safe to run. They do not affect your development or production data.
+
