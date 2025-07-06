@@ -26,9 +26,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     return LoginResponse(
         access_token=access_token,
-        user_id=user.id,
         user_name=user.name,
-        user_email=user.email,
         user_role=user.role.name if user.role else None,
         user_language=user.language.code if user.language else None,
     )

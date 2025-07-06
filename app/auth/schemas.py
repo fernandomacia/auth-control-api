@@ -8,7 +8,6 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
-    user_email: EmailStr
     user_name: str
     user_role: str
     user_language: str
