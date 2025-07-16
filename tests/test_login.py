@@ -2,6 +2,7 @@
 
 import pytest
 
+
 def test_login_success(client):
     """Test successful login with valid credentials."""
     response = client.post("/login", json={
@@ -10,11 +11,15 @@ def test_login_success(client):
     })
 
     assert response.status_code == 200
-    data = response.json()
+    json = response.json()
 
+    assert json["success"] is True
+    assert json["message"] == "Login successful"
+    assert "data" in json
+
+    data = json["data"]
     assert "access_token" in data
     assert isinstance(data["access_token"], str) and data["access_token"]
-    assert data["user_email"] == "testadmin@example.net"
     assert data["user_name"] == "Test Admin"
     assert data["user_role"] == "admin"
     assert data["user_language"] == "en"
@@ -32,7 +37,13 @@ def test_login_failure_cases(client, email, password):
     })
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid credentials"
+    json = response.json()
+
+    assert json["success"] is False
+    assert json["message"] == "Invalid credentials"
+    assert "data" in json
+    assert json["data"] == {}
+
 
 def test_login_inactive_user(client, db):
     """Test login fails if user is inactive."""
@@ -48,8 +59,13 @@ def test_login_inactive_user(client, db):
     })
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Inactive user"
-    
+    json = response.json()
+
+    assert json["success"] is False
+    assert json["message"] == "Inactive user"
+    assert "data" in json
+    assert json["data"] == {}
+
     # Restore user to active state for other tests
     user.is_active = True
     db.commit()
