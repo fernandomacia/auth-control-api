@@ -7,6 +7,7 @@ import os
 
 from app.auth import routes as auth_routes
 from app.routes import user_routes as user_routes
+from app.routes import example_users_routes as example_users_routes
 
 # Load environment variables from .env file
 load_dotenv()
@@ -38,3 +39,4 @@ def read_root():
 # Register authentication and user-related routes
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
+app.include_router(example_users_routes.router)

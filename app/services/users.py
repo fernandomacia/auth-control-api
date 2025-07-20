@@ -20,38 +20,41 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
-    """
-    Extracts the current authenticated user from the access token.
-
-    Decodes the JWT, retrieves the user from the database, and validates
-    their existence and active status.
-
-    Args:
-        token (str): Bearer token from the Authorization header.
-        db (Session): Database session dependency.
-
-    Returns:
-        User: The authenticated and active user.
-
-    Raises:
-        HTTPException: 401 if token is invalid, user not found, or inactive.
-    """
+    print("Entrando en get_current_user")  # Depuración
+    print("Token recibido:", token)  # Depuración
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        print("Payload decodificado:", payload)  # Depuración
+        # Verifica si 'sub' está en el payload y es convertible a int
+        if "sub" not in payload:
+            print("El campo 'sub' no está en el payload")  # Depuración
+            raise ValueError("No sub in payload")
         user_id = int(payload.get("sub"))
-    except (JWTError, TypeError, ValueError):
+        print("user_id extraído:", user_id)  # Depuración
+    except (JWTError, TypeError, ValueError) as e:
+        print("Error decodificando el token o extrayendo user_id:", e)  # Depuración
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
 
     user = db.query(User).filter_by(id=user_id).first()
+    print("Usuario obtenido de la base de datos:", user)  # Depuración
 
     if user is None or not user.is_active:
+        print("Usuario no existe o está inactivo")  # Depuración
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive or invalid user",
         )
 
+    print("user:", user.id, user.email)  # Muestra atributos específicos
+    return user
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Inactive or invalid user",
+    )
+
+    print("user:", user.id, user.email)  # Muestra atributos específicos
     return user
 
