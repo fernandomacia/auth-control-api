@@ -6,15 +6,25 @@ from app.models.language import Language
 from app.utils.security import create_access_token
 
 
+def ensure_language_exists(db, code: str, name: str):
+    """
+    Ensure the language with the given code exists in the database.
+
+    Prevents duplicate insertions that violate the UNIQUE constraint.
+    """
+    if not db.query(Language).filter_by(code=code).first():
+        db.add(Language(code=code, name=name))
+        db.commit()
+
+
 def test_update_language_success(client, db):
     """
     Test successful language update for an active user.
-    
+
     Verifies that the user language is updated and stored correctly in the database.
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
-    db.add(Language(code="es", name="Español"))
-    db.commit()
+    ensure_language_exists(db, "es", "Español")
 
     token = create_access_token(data={"sub": str(user.id)})
 
@@ -38,7 +48,7 @@ def test_update_language_success(client, db):
 def test_update_language_not_found(client, db):
     """
     Test language update fails if language code does not exist.
-    
+
     Expects a 400 response with appropriate error message.
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
@@ -61,13 +71,11 @@ def test_update_language_not_found(client, db):
 def test_update_language_inactive_user(client, db):
     """
     Test language update fails if user is inactive.
-    
+
     Expects a 401 response and does not perform the update.
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
-    if not db.query(Language).filter_by(code="es").first():
-        db.add(Language(code="es", name="Español"))
-        db.commit()
+    ensure_language_exists(db, "es", "Español")
 
     user.is_active = False
     db.commit()
@@ -93,7 +101,7 @@ def test_update_language_inactive_user(client, db):
 def test_update_language_user_not_found(client):
     """
     Test language update fails if user does not exist.
-    
+
     Expects a 401 response with error message.
     """
     token = create_access_token(data={"sub": "99999"})  # non-existent user

@@ -1,8 +1,8 @@
-# app/auth/routes.py
+# app/routes/auth_routes.py
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.auth.schemas import LoginRequest
+from app.schemas.auth_schema import LoginRequest
 from app.core.database import get_db
 from app.models.user import User
 from app.utils.security import verify_password, create_access_token

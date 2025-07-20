@@ -5,9 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from app.auth import routes as auth_routes
-from app.routes import user_routes as user_routes
-from app.routes import example_users_routes as example_users_routes
+from app.routes import auth_routes, user_routes, example_users_routes
 
 # Load environment variables from .env file
 load_dotenv()
