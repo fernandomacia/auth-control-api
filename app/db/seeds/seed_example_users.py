@@ -6,9 +6,10 @@ from app.utils.security import get_password_hash
 
 def seed_example_users(session: Session) -> None:
     examples = [
-        {"name": "Admin", "email": "admin@example.net", "role": "admin", "language": "en", "password": "admin"},
-        {"name": "Superadmin", "email": "superadmin@example.net", "role": "superadmin", "language": "es", "password": "superadmin"},
-        {"name": "User", "email": "user@example.net", "role": "user", "language": "fr", "password": "user"},
+        {"name": "Admin Example", "email": "admin@example.net", "role": "admin", "language": "en", "password": "adminPassword"},
+        {"name": "Superadmin Example", "email": "superadmin@example.net", "role": "superadmin", "language": "es", "password": "superadminPassword"},
+        {"name": "User Example", "email": "user@example.net", "role": "user", "language": "fr", "password": "userPassword"},
+        {"name": "Inactive User", "email": "inactive@example.net", "role": "user", "language": "es", "password": "inactivePassword", "is_active": False}
     ]
 
     for user_data in examples:
@@ -31,7 +32,7 @@ def seed_example_users(session: Session) -> None:
             hashed_password=hashed,
             role_id=role.id,
             language_id=lang.id,
-            is_active=True
+            is_active=user_data.get("is_active", True)
         )
 
         session.add(user)

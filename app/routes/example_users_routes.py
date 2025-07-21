@@ -17,14 +17,16 @@ def get_example_users(db: Session = Depends(get_db)):
     example_emails = [
         "user@example.net",
         "admin@example.net",
-        "superadmin@example.net"
+        "superadmin@example.net",
+        "inactive@example.net"
     ]
 
     # Plain passwords assigned manually
     passwords = {
-        "user@example.net": "user",
-        "admin@example.net": "admin",
-        "superadmin@example.net": "superadmin"
+        "user@example.net": "userPassword",
+        "admin@example.net": "adminPassword",
+        "superadmin@example.net": "superadminPassword",
+        "inactive@example.net": "inactivePassword"
     }
 
     # Query users from database
@@ -38,10 +40,11 @@ def get_example_users(db: Session = Depends(get_db)):
     data = []
     for user in users:
         data.append({
-            "name": user.email,
-            "password": passwords.get(user.email),
-            "language": user.language.code if user.language else None,
-            "role": user.role.name if user.role else None
+            "user_name": user.name,
+            "user_email": user.email,
+            "user_password": passwords.get(user.email),
+            "user_language": user.language.code if user.language else None,
+            "user_role": user.role.name if user.role else None
         })
 
     return json_response(
