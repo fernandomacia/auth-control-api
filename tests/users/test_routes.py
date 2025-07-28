@@ -29,7 +29,7 @@ def test_update_language_success(client, db):
     token = create_access_token(data={"sub": str(user.id)})
 
     response = client.put(
-        "/me",
+        "/users/me",
         headers={"Authorization": f"Bearer {token}"},
         json={"language_code": "es"}
     )
@@ -55,7 +55,7 @@ def test_update_language_not_found(client, db):
     token = create_access_token(data={"sub": str(user.id)})
 
     response = client.put(
-        "/me",
+        "/users/me",
         headers={"Authorization": f"Bearer {token}"},
         json={"language_code": "zz"}
     )
@@ -83,7 +83,7 @@ def test_update_language_inactive_user(client, db):
     token = create_access_token(data={"sub": str(user.id)})
 
     response = client.put(
-        "/me",
+        "/users/me",
         headers={"Authorization": f"Bearer {token}"},
         json={"language_code": "es"}
     )
@@ -107,7 +107,7 @@ def test_update_language_user_not_found(client):
     token = create_access_token(data={"sub": "99999"})  # non-existent user
 
     response = client.put(
-        "/me",
+        "/users/me",
         headers={"Authorization": f"Bearer {token}"},
         json={"language_code": "es"}
     )

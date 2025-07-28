@@ -9,7 +9,7 @@ from app.schemas.user_schema import UpdateUserRequest
 from app.services.users import get_current_user
 from app.utils.response import json_response
 
-router = APIRouter(prefix="/me", tags=["User"])
+router = APIRouter(prefix="/users/me", tags=["User"])
 
 @router.put("")
 def update_user(

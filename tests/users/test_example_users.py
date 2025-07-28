@@ -62,23 +62,25 @@ def test_get_example_users_success(client, db, insert_example_users):
     assert response.status_code == 200
 
     json = response.json()
+    print(json)
     assert json["success"] is True
     assert json["message"] == "Example users retrieved successfully"
     assert isinstance(json["data"], list)
     assert len(json["data"]) == 3
 
     expected_passwords = {
-        "user@example.net": "user",
-        "admin@example.net": "admin",
-        "superadmin@example.net": "superadmin",
+        "user": "userPassword",
+        "admin": "adminPassword",
+        "superadmin": "superadminPassword",
     }
 
     expected_roles = {"User", "Admin", "SuperAdmin"}
     expected_languages = {"en", "es", "fr"}
 
     for user_data in json["data"]:
-        email = user_data["name"]
-        assert email in expected_passwords
-        assert user_data["password"] == expected_passwords[email]
-        assert user_data["role"] in expected_roles
-        assert user_data["language"] in expected_languages
+        user_name = user_data["user_name"]
+        assert user_name in expected_passwords
+        assert user_data["user_email"] == f"{user_name}@example.net"
+        assert user_data["user_password"] == expected_passwords[user_name]
+        assert user_data["user_role"] in expected_roles
+        assert user_data["user_language"] in expected_languages
