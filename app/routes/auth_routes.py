@@ -31,6 +31,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         data={
             "access_token": access_token,
             "user_name": user.name,
+            "user_email": user.email,
             "user_role": user.role.name if user.role else None,
             "user_language": user.language.code if user.language else None,
         }

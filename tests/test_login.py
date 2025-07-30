@@ -21,6 +21,7 @@ def test_login_success(client):
     assert "access_token" in data
     assert isinstance(data["access_token"], str) and data["access_token"]
     assert data["user_name"] == "Test Admin"
+    assert data["user_email"] == "testadmin@example.net"
     assert data["user_role"] == "admin"
     assert data["user_language"] == "en"
 
