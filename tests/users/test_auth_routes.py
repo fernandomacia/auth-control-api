@@ -1,4 +1,4 @@
-# tests/test_login.py
+# tests/users/test_auth_routes.py
 
 import pytest
 

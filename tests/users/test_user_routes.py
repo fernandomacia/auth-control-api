@@ -1,4 +1,6 @@
-# tests/users/test_update_user.py
+# tests/users/test_user_routes.py
+
+"""Test suite for user self-update routes (/users/me)."""
 
 import pytest
 from app.models.user import User
@@ -8,9 +10,14 @@ from app.utils.security import create_access_token
 
 def ensure_language_exists(db, code: str, name: str):
     """
-    Ensure the language with the given code exists in the database.
+    Ensure a language exists in the database.
 
-    Prevents duplicate insertions that violate the UNIQUE constraint.
+    Prevents unique constraint violations on repeated test runs.
+
+    Args:
+        db (Session): SQLAlchemy test database session.
+        code (str): Language code (e.g., "es").
+        name (str): Language name (e.g., "Español").
     """
     if not db.query(Language).filter_by(code=code).first():
         db.add(Language(code=code, name=name))
@@ -19,9 +26,11 @@ def ensure_language_exists(db, code: str, name: str):
 
 def test_update_language_success(client, db):
     """
-    Test successful language update for an active user.
+    Verify successful update of user language.
 
-    Verifies that the user language is updated and stored correctly in the database.
+    Asserts:
+        - 200 OK
+        - Updated language code in DB and response
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
     ensure_language_exists(db, "es", "Español")
@@ -36,7 +45,6 @@ def test_update_language_success(client, db):
 
     assert response.status_code == 200
     data = response.json()
-
     assert data["success"] is True
     assert data["message"] == "User updated successfully"
     assert data["data"]["user_language"] == "es"
@@ -47,9 +55,11 @@ def test_update_language_success(client, db):
 
 def test_update_language_not_found(client, db):
     """
-    Test language update fails if language code does not exist.
+    Verify that an unknown language code returns 400.
 
-    Expects a 400 response with appropriate error message.
+    Asserts:
+        - 400 Bad Request
+        - Proper error message and empty data object
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
     token = create_access_token(data={"sub": str(user.id)})
@@ -62,7 +72,6 @@ def test_update_language_not_found(client, db):
 
     assert response.status_code == 400
     data = response.json()
-
     assert data["success"] is False
     assert data["message"] == "Language not found"
     assert data["data"] == {}
@@ -70,9 +79,11 @@ def test_update_language_not_found(client, db):
 
 def test_update_language_inactive_user(client, db):
     """
-    Test language update fails if user is inactive.
+    Ensure language update is blocked for inactive users.
 
-    Expects a 401 response and does not perform the update.
+    Asserts:
+        - 401 Unauthorized
+        - Error message indicating inactive or invalid user
     """
     user = db.query(User).filter(User.email == "testadmin@example.net").first()
     ensure_language_exists(db, "es", "Español")
@@ -90,29 +101,30 @@ def test_update_language_inactive_user(client, db):
 
     assert response.status_code == 401
     data = response.json()
-
     assert data["detail"] == "Inactive or invalid user"
 
-    # Restore user state after test
+    # Restore user for future tests
     user.is_active = True
     db.commit()
 
 
 def test_update_language_user_not_found(client):
     """
-    Test language update fails if user does not exist.
+    Ensure 401 is returned if the user ID does not exist.
 
-    Expects a 401 response with error message.
+    Asserts:
+        - 401 Unauthorized
+        - Error message indicating inactive or invalid user
     """
-    token = create_access_token(data={"sub": "99999"})  # non-existent user
+    token = create_access_token(data={"sub": "99999"})  # Non-existent user ID
 
     response = client.put(
         "/users/me",
         headers={"Authorization": f"Bearer {token}"},
-        json={"language_code": "es"}
+        json={"language_code": "es"},
     )
 
     assert response.status_code == 401
     data = response.json()
-
     assert data["detail"] == "Inactive or invalid user"
+
