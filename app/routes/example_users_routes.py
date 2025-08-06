@@ -1,3 +1,5 @@
+# app/routes/example_users_routes.py
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -6,14 +8,23 @@ from app.utils.response import json_response
 
 router = APIRouter(tags=["Users"])
 
+
 @router.get("/users/examples")
 def get_example_users(db: Session = Depends(get_db)):
     """
-    Returns a static list of example users fetched from the database.
-    Passwords are assigned manually for testing purposes.
-    No authentication required.
+    Returns a list of predefined example users.
+
+    - No authentication required.
+    - Passwords are manually assigned for demonstration purposes.
+    - Includes additional fields: user_id, user_email, user_language, user_role, and is_active status.
+
+    Args:
+        db (Session): SQLAlchemy database session.
+
+    Returns:
+        JSONResponse: Response containing a list of example users with credentials and metadata.
     """
-    # Emails of example users
+    # Predefined emails for example users
     example_emails = [
         "user@example.net",
         "admin@example.net",
@@ -21,7 +32,7 @@ def get_example_users(db: Session = Depends(get_db)):
         "inactive@example.net"
     ]
 
-    # Plain passwords assigned manually
+    # Manually assigned example passwords
     passwords = {
         "user@example.net": "userPassword",
         "admin@example.net": "adminPassword",
@@ -29,22 +40,20 @@ def get_example_users(db: Session = Depends(get_db)):
         "inactive@example.net": "inactivePassword"
     }
 
-    # Query users from database
-    users = (
-        db.query(User)
-        .filter(User.email.in_(example_emails))
-        .all()
-    )
+    # Retrieve users from the database
+    users = db.query(User).filter(User.email.in_(example_emails)).all()
 
-    # Build response data
+    # Format response payload
     data = []
     for user in users:
         data.append({
+            "user_id": user.id,
             "user_name": user.name,
             "user_email": user.email,
             "user_password": passwords.get(user.email),
             "user_language": user.language.code if user.language else None,
-            "user_role": user.role.name if user.role else None
+            "user_role": user.role.name if user.role else None,
+            "user_active": user.is_active
         })
 
     return json_response(

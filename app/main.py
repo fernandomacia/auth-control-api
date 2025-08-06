@@ -1,11 +1,11 @@
 # app/main.py
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import os
 
-from app.routes import auth_routes, user_routes, example_users_routes
+from app.routes import auth_routes, user_routes, admin_user_routes, example_users_routes
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,7 +16,7 @@ origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 # Initialize FastAPI application
 app = FastAPI()
 
-# Apply CORS middleware
+# Apply CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -25,16 +25,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     """
-    Basic health check route.
-    
-    Returns a simple JSON message confirming the API is running.
+    Health check endpoint.
+
+    Returns:
+        dict: Confirmation that the API is operational.
     """
     return {"message": "Auth Control API is running"}
 
-# Register authentication and user-related routes
+
+# Register API routes
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
+app.include_router(admin_user_routes.router)
 app.include_router(example_users_routes.router)
