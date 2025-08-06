@@ -93,3 +93,46 @@ def update_user_language(
         message="User language updated",
         data={"user_id": user.id, "user_language": user.language.code}
     )
+
+@router.put("/{user_id}/role")
+def update_user_role(
+    user_id: int,
+    role: str = Body(..., embed=False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_or_superadmin_user)
+):
+    """
+    Updates the `role_id` of a user.
+
+    - Requires admin or superadmin privileges.
+    - Returns 404 if the user or role is not found.
+
+    Args:
+        user_id (int): Target user's ID.
+        payload (dict): Should contain `role` (str).
+
+    Returns:
+        JSON response with updated user.
+    """
+    from app.models.user_role import UserRole
+
+    user = db.query(User).filter_by(id=user_id).first()
+    if not user:
+        return json_response(False, "User not found", status.HTTP_404_NOT_FOUND)
+
+    if not isinstance(role, str):
+        return json_response(False, "Invalid role format", status.HTTP_400_BAD_REQUEST)
+
+    role = db.query(UserRole).filter_by(name=role).first()
+    if not role:
+        return json_response(False, "Role not found", status.HTTP_404_NOT_FOUND)
+
+    user.role_id = role.id
+    db.commit()
+    db.refresh(user)
+
+    return json_response(
+        success=True,
+        message="User role updated",
+        data={"user_id": user.id, "user_role": user.role.name}
+    )
