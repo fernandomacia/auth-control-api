@@ -1,4 +1,4 @@
-# app/schemas/user_schemas.py
+# app/schemas/user_schema.py
 
 from pydantic import BaseModel, Field
 

@@ -1,4 +1,4 @@
-# app/services/user.py
+# app/services/users.py
 
 import os
 from fastapi import Depends, HTTPException, status
