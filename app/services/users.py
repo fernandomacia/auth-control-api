@@ -4,7 +4,7 @@ import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from jose import JWTError, jwt
+from jose import JWTError, ExpiredSignatureError, jwt
 from app.core.database import get_db
 from app.models.user import User
 
@@ -21,11 +21,12 @@ def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """
-    Extracts the authenticated user from the JWT token.
+    Extracts and validates the current authenticated user from the JWT token.
 
-    - Decodes the JWT and retrieves the user by ID.
-    - Verifies that the user exists and is active.
-    - Raises 401 if the token is invalid or the user is inactive.
+    - Decodes the token and retrieves the user ID from the 'sub' claim.
+    - Raises 401 with 'Token expired' if the token is expired.
+    - Raises 401 with 'Invalid authentication credentials' for other decode errors.
+    - Verifies the user exists and is active.
 
     Args:
         token (str): Bearer token from the Authorization header.
@@ -37,8 +38,13 @@ def get_current_user(
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id = int(payload.get("sub"))
-    except (JWTError, TypeError, ValueError):
+    except ExpiredSignatureError:
         raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired"
+        )
+    except (JWTError, TypeError, ValueError) as e:
+         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
