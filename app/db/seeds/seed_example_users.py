@@ -1,3 +1,5 @@
+# app/db/seeds/seed_example_users.py
+
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.user_role import UserRole

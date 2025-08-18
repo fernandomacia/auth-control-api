@@ -1,0 +1,79 @@
+# docker-compose.yml (Compose v2, no 'version')
+
+name: AuthControl
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: authcontrol-db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"     # host:container
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Migrations service to run Alembic migrations
+  migrate:
+    image: authcontrol-backend
+    container_name: authcontrol-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.example
+    command: >
+      sh -lc "alembic -c /app/alembic.ini upgrade head"
+    restart: "no"
+
+  # Seed data after database is ready and migrations are done
+  seed:
+    image: authcontrol-backend
+    container_name: authcontrol-seed
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env.example
+    command: >
+      sh -lc "python -m app.db.seeds"
+    restart: "no"
+
+  # Build once and reuse the same image
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: authcontrol-backend
+    container_name: fastapi-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
+    env_file:
+      - .env.example
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    # Named volume for Postgres persistence

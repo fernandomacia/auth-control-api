@@ -1,3 +1,5 @@
+# app/db/seeds/seed_languages.py
+
 from sqlalchemy.orm import Session
 from app.models.language import Language
 

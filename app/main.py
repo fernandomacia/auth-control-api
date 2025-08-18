@@ -36,6 +36,10 @@ def read_root():
     """
     return {"message": "Auth Control API is running"}
 
+@app.get("/health")
+def health():
+    """Lightweight liveness probe."""
+    return {"status": "ok"}
 
 # Register API routes
 app.include_router(auth_routes.router)

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# VCS/IDE
+.git
+.gitignore
+.vscode
+.idea
+
+# Environments
+.venv
+env/
+venv/
+
+# Build/Artifacts
+dist/
+build/
+
+# OS
+.DS_Store
+
+# App
+.env
+reports/
