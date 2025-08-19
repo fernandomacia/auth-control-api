@@ -1,23 +1,45 @@
+# .github/workflows/publish.yml
+
 name: publish-docker
+
 on:
   push:
     branches: [ main ]
-    tags: ['v*']
+    tags: [ 'v*' ]
+
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/AuthControl-Backend
+  IMAGE_NAME: ${{ github.repository_owner }}/auth-control-api
 
 jobs:
-  build-and-push:
+  build-and-test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports: [ '55432:5432' ]
+        env:
+          POSTGRES_DB: authcontrol
+          POSTGRES_USER: authuser
+          POSTGRES_PASSWORD: changeme
+        options: >-
+          --health-cmd "pg_isready -U authuser -d authcontrol"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/metadata-action@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker metadata
         id: meta
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -25,17 +47,134 @@ jobs:
             type=ref,event=tag
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (ci-test local image)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ci-test
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Wait for Postgres healthy
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 55432 -U authuser -d authcontrol; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Postgres did not become healthy in time" >&2
+          exit 1
+
+      - name: Run Alembic migrations
+        env:
+          DATABASE_URL: postgresql+psycopg2://authuser:changeme@127.0.0.1:55432/authcontrol
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ci-test \
+            sh -lc "alembic -c /app/alembic.ini upgrade head"
+
+      - name: Run seeds
+        env:
+          DATABASE_URL: postgresql+psycopg2://authuser:changeme@127.0.0.1:55432/authcontrol
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ci-test \
+            sh -lc "python -m app.db.seeds"
+
+      - name: API smoke test (/health)
+        env:
+          DATABASE_URL: postgresql+psycopg2://authuser:changeme@127.0.0.1:55432/authcontrol
+        run: |
+          CID=$(docker run -d --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ci-test)
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then OK=1; break; fi
+            sleep 2
+          done
+          docker stop "$CID" >/dev/null
+          test "${OK:-}" = "1"
+
+      - name: Upload docker-compose.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose
+          path: docker-compose.yml
+          if-no-files-found: error
+
+  push:
+    runs-on: ubuntu-latest
+    needs: [ build-and-test ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+
+      - name: Build & Push (multi-arch)
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [ push ]
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download docker-compose artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-compose
+          path: .
+
+      - name: Create/Update GitHub Release and upload compose
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            docker-compose.yml
+          fail_on_unmatched_files: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

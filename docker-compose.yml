@@ -1,60 +1,54 @@
-# docker-compose.yml (Compose v2, no 'version')
-
+# docker-compose.yml
 name: AuthControl
 
 services:
   db:
     image: postgres:16-alpine
     container_name: authcontrol-db
+    # Host port is configurable; default avoids conflicts with local Postgres.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"     # host:container
+      - "${POSTGRES_PORT:-55432}:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-authcontrol}
+      POSTGRES_USER: ${POSTGRES_USER:-authuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-authuser} -d ${POSTGRES_DB:-authcontrol}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
-  # Migrations service to run Alembic migrations
   migrate:
-    image: authcontrol-backend
+    # Public image already built and published to GHCR
+    image: ghcr.io/fernandomacia/auth-control-api:latest
     container_name: authcontrol-migrate
     depends_on:
       db:
         condition: service_healthy
-    env_file:
-      - .env.example
-    command: >
-      sh -lc "alembic -c /app/alembic.ini upgrade head"
+    environment:
+      # Internal DB address inside Compose network (never use host port here)
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-authuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-authcontrol}
+    command: sh -lc "alembic -c /app/alembic.ini upgrade head"
     restart: "no"
 
-  # Seed data after database is ready and migrations are done
   seed:
-    image: authcontrol-backend
+    image: ghcr.io/fernandomacia/auth-control-api:latest
     container_name: authcontrol-seed
     depends_on:
       db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    env_file:
-      - .env.example
-    command: >
-      sh -lc "python -m app.db.seeds"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-authuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-authcontrol}
+    command: sh -lc "python -m app.db.seeds"
     restart: "no"
 
-  # Build once and reuse the same image
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: authcontrol-backend
+    image: ghcr.io/fernandomacia/auth-control-api:latest
     container_name: fastapi-backend
     depends_on:
       db:
@@ -63,17 +57,16 @@ services:
         condition: service_completed_successfully
       seed:
         condition: service_completed_successfully
-    env_file:
-      - .env.example
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-authuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-authcontrol}
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      test: ["CMD-SHELL", "python - <<'PY'\nimport urllib.request,sys\ntry:\n  urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
     restart: unless-stopped
 
 volumes:
   pgdata:
-    # Named volume for Postgres persistence
