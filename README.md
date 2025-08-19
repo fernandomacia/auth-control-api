@@ -26,15 +26,58 @@ extensible auth service.
 
 ## Prebuilt Docker Image
 
-A ready-to-use Docker image bundles the API, database, and seeded users.
-Download it and run the service without any additional setup:
+A prebuilt **Compose stack** (PostgreSQL + migrations + seeds + API) is available.
+
+### Prerequisites
+
+- **Docker Engine** ≥ 20.10  
+- **Docker Compose v2** (the `docker compose` plugin)
+
+Check versions:
 
 ```bash
-docker pull ghcr.io/fernandomacia/auth-control-api:latest
-docker run -p 8000:8000 ghcr.io/fernandomacia/auth-control-api:latest
+docker --version
+docker compose version
 ```
 
-The image exposes the following endpoints:
+**Linux quick install (Debian/Ubuntu):**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-plugin
+```
+
+**Windows quick install (PowerShell):**
+
+Requirements: Windows 10 2004+ or Windows 11 with virtualization enabled.
+
+Install WSL 2 (if not already enabled) and reboot if prompted:
+
+```powershell
+wsl --install
+```
+
+Install Docker Desktop:
+
+```powershell
+winget install -e --id Docker.DockerDesktop
+```
+
+Launch Docker Desktop once to finish setup (WSL 2 backend is the default).
+
+### Run with one-liners
+
+Download the compose file from the latest release and start the stack:
+
+```bash
+curl -fsSLO https://github.com/fernandomacia/auth-control-api/releases/latest/download/docker-compose.yml
+docker compose up -d
+```
+
+### The stack exposes
+
+PostgreSQL at localhost:55432 (inside the network it’s db:5432)
+API at http://localhost:8000 with the following endpoints:
 
 | Method | Endpoint           | Description                    |
 |--------|--------------------|--------------------------------|
@@ -45,6 +88,12 @@ The image exposes the following endpoints:
 | GET    | `/users/examples`  | List seeded example users      |
 
 All responses follow the standard `success`/`message`/`data` JSON structure.
+
+### Stop the stack
+
+```bash
+docker compose down
+```
 
 ## Getting Started
 
