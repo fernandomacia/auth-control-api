@@ -1,137 +1,131 @@
-# 🚀 Auth Control API
+# Auth Control API
 
-**Auth Control API** is a FastAPI-based backend that handles secure authentication, role-based access control (RBAC), and user preferences such as language selection. This project is designed to be modular, extensible, and production-ready.
+Auth Control API is a FastAPI backend that provides JWT authentication,
+role-based access control and user preferences such as language selection.
+It is intended as a foundation for projects that require a lightweight and
+extensible auth service.
 
----
+## Features
 
-## ✨ Features
+- JWT-based login with configurable expiry
+- Roles: `user`, `admin`, and `superadmin`
+- Endpoint for updating the authenticated user's language
+- Admin endpoints for managing user status, role and language
+- Example users endpoint for quick testing
+- Comprehensive test suite with Pytest
 
-- 🔐 JWT-based authentication
-- 👥 Role-based user access (`user`, `admin`, `superadmin`)
-- 🌐 User language preferences
-- 📦 FastAPI + Pydantic architecture
-- 🧪 Testing
-- ⚙️ Ready to scale with new modules
+## Tech Stack
 
----
-
-## 🧱 Tech Stack
-
-- Python 3.11.2
-- FastAPI
-- Pydantic
-- Uvicorn
-- SQLAlchemy + Alembic
+- Python 3.11
+- FastAPI & Pydantic
+- SQLAlchemy & Alembic
 - PostgreSQL
-- JWT via `python-jose`
-- bcrypt for password hashing 
+- JWT via [python-jose](https://python-jose.readthedocs.io/)
+- bcrypt for password hashing
 - Pytest
 
----
+## Prebuilt Docker Image
 
-## 🔧 Installation & Run
+A ready-to-use Docker image bundles the API, database, and seeded users.
+Download it and run the service without any additional setup:
 
-### 📥 Clone the repository
+```bash
+docker pull ghcr.io/fernandomacia/auth-control-api:latest
+docker run -p 8000:8000 ghcr.io/fernandomacia/auth-control-api:latest
+```
+
+The image exposes the following endpoints:
+
+| Method | Endpoint           | Description                    |
+|--------|--------------------|--------------------------------|
+| GET    | `/health`          | Health check                   |
+| POST   | `/login`           | Obtain JWT token               |
+| PUT    | `/users/me`        | Update current user's language |
+| PATCH  | `/users/{user_id}` | Partial user update (admin)    |
+| GET    | `/users/examples`  | List seeded example users      |
+
+All responses follow the standard `success`/`message`/`data` JSON structure.
+
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/fernandomacia/AuthControlApi.git
 cd AuthControlApi
 ```
 
-### 🐍 Create a virtual environment
+### 2. Create a virtual environment
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
-### 📦 Install dependencies
+
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### ⚙️ Environment Configuration
+### 4. Configure environment variables
 
-Before running the application, create a `.env` file at the root of the project.
-You can use the provided `.env.example` as a starting point:
+Copy the sample environment file and adjust values as needed:
 
 ```bash
 cp .env.example .env
 ```
-☠️ Do not commit the .env file. It is ignored by .gitignore.
-⚠️ Make sure the PostgreSQL server is running and create <your_database>. Then write your credentials into your .env file:
+
+Required values include your database connection and JWT settings, e.g.:
 
 ```env
-DATABASE_URL=postgresql://<your_user>:<your_password>@localhost:5432/<your_database>
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/DBNAME
+JWT_SECRET_KEY=<generated secret>
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-🔐 JWT Secret Key Setup. For security reasons, you must provide a strong secret key for JWT signing. This key is used to encode and verify authentication tokens, and should never be hardcoded or weak.
-You can generate a secur key using Python:
+Generate a secure secret key:
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-Once generated, copy the output into your .env file:
-
-```env
-JWT_SECRET_KEY=your_generated_secure_key_here
-```
-
-### 🛠️ Apply database migrations
+### 5. Apply database migrations and seed data
 
 ```bash
 alembic upgrade head
-```
-
-### 🌱 Seed initial data (roles, languages, test users)
-
-```bash
 python -m app.db.run_seeds
 ```
 
-### ▶️ Run the development server
+### 6. Run the development server
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
----
-
 ## Example Users
 
-The following example users are automatically created by the seed script:
+The seed script creates several accounts for quick testing:
 
-| Name        | Email                    | Password     | Role        | Language |
-|-------------|--------------------------|--------------|-------------|----------|
-| Admin       | admin@example.net        | admin        | admin       | en       |
-| Superadmin  | superadmin@example.net   | superadmin   | superadmin  | es       |
-| User        | user@example.net         | user         | user        | fr       |
+| Name        | Email                    | Password            | Role        | Language | Active |
+|-------------|--------------------------|---------------------|-------------|----------|--------|
+| Superadmin  | superadmin@example.net   | superadminPassword  | superadmin  | es       | true   |
+| Admin       | admin@example.net        | adminPassword       | admin       | en       | true   |
+| User        | user@example.net         | userPassword        | user        | fr       | true   |
+| Inactive    | inactive@example.net     | inactivePassword    | user        | es       | false  |
 
-⚠️ These accounts are for development and testing purposes only. Do **not** use them in production environments.
+These accounts are meant for development only. Do **not** use them in
+production environments.
 
-## 🧪 Testing
+## Testing
 
-This project includes automated tests using Pytest and FastAPI's TestClient.
-
-To run the test suite:
+Run the tests with:
 
 ```bash
 pytest
 ```
 
-📂 Tests are located in the /tests/ directory and use a separate SQLite database stored in:
-
-```text
-./tests/databases/test.db
-```
-
-**Included tests:**
-
-✅ /login endpoint success and error cases
-
-🧪 Custom fixtures with isolated user, role, and language seeding
-
-
-✅ Tests are safe to run. They do not affect your development or production data.
-
+The suite uses a temporary SQLite database located at
+`tests/databases/test.db` and will not interfere with your development data.
